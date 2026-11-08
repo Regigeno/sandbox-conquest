@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sandbox Conquest — Design Doc</title>
+<style>
+  :root {
+    --bg: #0b0d12;
+    --bg2: #141821;
+    --card: #1a1f2b;
+    --border: #2a3142;
+    --text: #e6e9f0;
+    --muted: #9aa3b8;
+    --accent: #7c9cff;
+    --accent2: #ff7c9c;
+    --gold: #f5c542;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+  /* hero */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    text-align: center;
+    padding: 2rem;
+    position: relative;
+    background: radial-gradient(ellipse at 50% 30%, #1a2240 0%, #0b0d12 70%);
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><circle cx='1' cy='1' r='1' fill='rgba(255,255,255,0.04)'/></svg>");
+    opacity: .6;
+    pointer-events: none;
+  }
+  .badge {
+    display: inline-block;
+    padding: .35rem .85rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: .8rem;
+    color: var(--muted);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+  }
+  .hero h1 {
+    font-size: clamp(2.6rem, 7vw, 5.5rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #fff 0%, var(--accent) 60%, var(--accent2) 100%);
+    -webkit-background-clip: text; background-clip: text;
+    color: transparent;
+    line-height: 1.05;
+  }
+  .hero p.tag {
+    font-size: clamp(1.05rem, 2vw, 1.35rem);
+    color: var(--muted);
+    max-width: 640px;
+    margin: 1.2rem 0 2rem;
+  }
+  .cta {
+    display: inline-flex; gap: .8rem; flex-wrap: wrap; justify-content: center;
+  }
+  .btn {
+    padding: .75rem 1.5rem;
+    border-radius: 10px;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid var(--border);
+    color: var(--text);
+    background: var(--card);
+    transition: transform .15s, border-color .15s, background .15s;
+  }
+  .btn:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .btn.primary { background: var(--accent); color: #0b0d12; border-color: var(--accent); }
+  .btn.primary:hover { background: #9bb3ff; }
+  .scroll-hint {
+    position: absolute; bottom: 1.5rem;
+    color: var(--muted); font-size: .8rem;
+    animation: bob 2s ease-in-out infinite;
+  }
+  @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(6px)} }
+
+  /* layout */
+  section { padding: 5rem 1.5rem; max-width: 1100px; margin: 0 auto; }
+  section h2 {
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    margin-bottom: .5rem;
+    letter-spacing: -0.01em;
+  }
+  section .lead { color: var(--muted); margin-bottom: 2.5rem; max-width: 720px; }
+  .grid { display: grid; gap: 1.2rem; }
+  .grid.cols-2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+  .grid.cols-3 { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.4rem 1.5rem;
+    transition: border-color .2s, transform .2s;
+  }
+  .card:hover { border-color: var(--accent); transform: translateY(-3px); }
+  .card h3 { font-size: 1.15rem; margin-bottom: .4rem; }
+  .card .tag { font-size: .75rem; color: var(--accent); text-transform: uppercase; letter-spacing: .08em; margin-bottom: .6rem; }
+  .card p { color: var(--muted); font-size: .95rem; }
+  .card ul { color: var(--muted); font-size: .92rem; padding-left: 1.2rem; margin-top: .5rem; }
+  .card ul li { margin-bottom: .3rem; }
+
+  /* factions */
+  .faction {
+    position: relative; overflow: hidden;
+  }
+  .faction .stripe {
+    position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+  }
+  .f-iron .stripe { background: #9ca3af; }
+  .f-steppe .stripe { background: #f59e0b; }
+  .f-arcane .stripe { background: #a78bfa; }
+  .f-wild .stripe { background: #34d399; }
+
+  /* loop steps */
+  .loop { display: flex; flex-wrap: wrap; gap: .6rem; }
+  .step {
+    flex: 1 1 140px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: .9rem 1rem;
+    text-align: center;
+    position: relative;
+  }
+  .step .num { color: var(--accent); font-weight: 700; font-size: .85rem; }
+  .step .name { font-weight: 600; margin-top: .2rem; }
+  .step .desc { color: var(--muted); font-size: .8rem; margin-top: .3rem; }
+
+  /* milestones */
+  .ms { display: flex; gap: 1rem; align-items: flex-start; padding: 1rem 0; border-bottom: 1px solid var(--border); }
+  .ms:last-child { border-bottom: none; }
+  .ms .badge2 {
+    flex-shrink: 0;
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    display: grid; place-items: center;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    font-weight: 700; color: var(--accent);
+  }
+  .ms h4 { margin-bottom: .2rem; }
+  .ms p { color: var(--muted); font-size: .9rem; }
+
+  /* stats table */
+  table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  th, td { padding: .7rem .8rem; text-align: left; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; }
+  td:first-child { font-weight: 600; }
+
+  /* open questions */
+  .q { background: var(--bg2); border-left: 3px solid var(--gold); padding: 1rem 1.2rem; border-radius: 0 10px 10px 0; margin-bottom: .8rem; }
+  .q strong { color: var(--gold); }
+
+  footer {
+    text-align: center; padding: 3rem 1.5rem;
+    color: var(--muted); font-size: .85rem;
+    border-top: 1px solid var(--border);
+  }
+
+  @media (max-width: 600px) {
+    section { padding: 3.5rem 1.2rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <span class="badge">Design Document v0.1</span>
+  <h1>Sandbox Conquest</h1>
+  <p class="tag">TABS meets Age of Conquest IV — a 2D top-down territory conquest sandbox where you drop armies, watch chaotic battles, and paint the map your color.</p>
+  <div class="cta">
+    <a href="#loop" class="btn primary">Explore the Design</a>
+    <a href="#factions" class="btn">Factions</a>
+    <a href="#milestones" class="btn">Roadmap</a>
+  </div>
+  <span class="scroll-hint">scroll ↓</span>
+</header>
+
+<section id="fantasy">
+  <h2>Core Fantasy</h2>
+  <p class="lead">You are a warlord (or god) shaping a continent. Drop armies onto a map, watch them clash with emergent, slightly-chaotic combat, and conquer territory. No rigid campaign — just a sandbox where you set up scenarios, tweak factions, and watch the world burn.</p>
+  <div class="grid cols-3">
+    <div class="card"><div class="tag">Map</div><h3>Conquer Territory</h3><p>Hex/square provinces with terrain, resources, and fortifications. Paint the continent your color.</p></div>
+    <div class="card"><div class="tag">Battle</div><h3>Watch Chaos</h3><p>Real-time arena battles with emergent unit AI — trampling, friendly fire, routing.</p></div>
+    <div class="card"><div class="tag">Sandbox</div><h3>No Hard Win</h3><p>Milestones, not endings. Unite the continent, or just watch factions fight.</p></div>
+  </div>
+</section>
+
+<section id="loop">
+  <h2>The Loop</h2>
+  <p class="lead">Six steps from map to conquest. Turn-based on the macro layer, real-time in battles.</p>
+  <div class="loop">
+    <div class="step"><div class="num">01</div><div class="name">Map View</div><div class="desc">See territories & armies</div></div>
+    <div class="step"><div class="num">02</div><div class="name">Recruit</div><div class="desc">Spend gold & manpower</div></div>
+    <div class="step"><div class="num">03</div><div class="name">Arrange</div><div class="desc">Form army stacks</div></div>
+    <div class="step"><div class="num">04</div><div class="name">Invade</div><div class="desc">Move into enemy land</div></div>
+    <div class="step"><div class="num">05</div><div class="name">Battle</div><div class="desc">Auto or watch</div></div>
+    <div class="step"><div class="num">06</div><div class="name">Resolve</div><div class="desc">Territory flips</div></div>
+  </div>
+</section>
+
+<section id="factions">
+  <h2>Factions</h2>
+  <p class="lead">Four distinct playstyles. Each has a color, flag, and 3–5 unit types.</p>
+  <div class="grid cols-2">
+    <div class="card faction f-iron"><div class="stripe"></div><div class="tag">Defense</div><h3>Iron Legion</h3><p>Heavy infantry, discipline. Holds the line; slow but unbreakable.</p><ul><li>Swordsmen, pikemen, shield wall</li><li>Stronghold defense bonus</li><li>Weakness: low mobility</li></ul></div>
+    <div class="card faction f-steppe"><div class="stripe"></div><div class="tag">Speed</div><h3>Steppe Horde</h3><p>Cavalry raiders. Fast flanking and pursuit; fragile in prolonged melee.</p><ul><li>Light riders, lancers</li><li>Raid economy: loot on victory</li><li>Weakness: poor vs. armor</li></ul></div>
+    <div class="card faction f-arcane"><div class="stripe"></div><div class="tag">Magic</div><h3>Arcane Covenant</h3><p>Magic & ranged. Area damage and morale shock; needs protection.</p><ul><li>Archers, mages, slingers</li><li>Friendly-fire possible</li><li>Weakness: low HP</li></ul></div>
+    <div class="card faction f-wild"><div class="stripe"></div><div class="tag">Swarm</div><h3>Wildfolk</h3><p>Beasts and swarm. Numbers and terrain bonuses (forest).</p><ul><li>Beasts, skirmishers</li><li>Forest terrain bonus</li><li>Weakness: disorganized</li></ul></div>
+  </div>
+</section>
+
+<section id="units">
+  <h2>Units & Stats</h2>
+  <p class="lead">Units are grouped into stacks (armies). A commander grants a buff.</p>
+  <table>
+    <thead><tr><th>Stat</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td>HP</td><td>Health points</td></tr>
+      <tr><td>Attack / Defense</td><td>Damage dealt / taken</td></tr>
+      <tr><td>Speed</td><td>Map movement & battle pace</td></tr>
+      <tr><td>Range</td><td>Melee vs. ranged</td></tr>
+      <tr><td>Morale</td><td>Rout threshold</td></tr>
+      <tr><td>Cost / Upkeep</td><td>Gold to recruit / per turn</td></tr>
+    </tbody>
+  </table>
+  <div class="grid cols-3" style="margin-top:1.5rem;">
+    <div class="card"><div class="tag">Infantry</div><h3>Hold the Line</h3><p>Swordsmen, pikemen, shield wall.</p></div>
+    <div class="card"><div class="tag">Cavalry</div><h3>Flank & Pursue</h3><p>Light riders, lancers.</p></div>
+    <div class="card"><div class="tag">Ranged</div><h3>Soft Targets</h3><p>Archers, mages, slingers.</p></div>
+    <div class="card"><div class="tag">Special</div><h3>Siege</h3><p>Breaks fortifications.</p></div>
+    <div class="card"><div class="tag">Special</div><h3>Beasts</h3><p>High damage, low control.</p></div>
+    <div class="card"><div class="tag">Support</div><h3>Healers</h3><p>Sustain the front.</p></div>
+  </div>
+</section>
+
+<section id="map">
+  <h2>The Map</h2>
+  <p class="lead">~60–100 provinces. Each has an owner, terrain, resource yield, and fortification level.</p>
+  <div class="grid cols-2">
+    <div class="card"><h3>Terrain Types</h3><ul><li>Plains — open, cavalry favored</li><li>Forest — Wildfolk bonus</li><li>Mountains — defense bonus</li><li>River — movement barrier</li><li>City — high yield, high fortification</li></ul></div>
+    <div class="card"><h3>Economy</h3><ul><li>Gold from provinces + tribute</li><li>Manpower pool regenerates slowly</li><li>Upkeep: unpaid armies desert</li><li>Recruit, upgrade, hire mercs</li></ul></div>
+  </div>
+</section>
+
+<section id="combat">
+  <h2>Combat — The TABS Flavor</h2>
+  <p class="lead">Battles run in a small arena generated from the province terrain.</p>
+  <div class="grid cols-2">
+    <div class="card"><div class="tag">Default</div><h3>Auto-Resolve</h3><p>Weighted outcome from stats, terrain, morale, and random variance. Fast and decisive.</p></div>
+    <div class="card"><div class="tag">Watch</div><h3>Real-Time Sim</h3><p>Spawn units, run lightweight sim: move, attack, rout. Slightly chaotic — friendly fire, trampling.</p></div>
+  </div>
+  <div class="card" style="margin-top:1.2rem;"><h3>Morale System</h3><p>Units rout when HP or allies drop below threshold. Routed units flee; if caught, destroyed. Player influences pre-battle placement, terrain choice, and aggressiveness.</p></div>
+</section>
+
+<section id="ai">
+  <h2>Enemy AI</h2>
+  <p class="lead">Simple priority AI — expand into weak neighbors, defend threatened borders, ally against the leader. Difficulty = aggression + economic bonus. Basic diplomacy, no deep trees in v1.</p>
+</section>
+
+<section id="milestones" id="roadmap">
+  <h2>Roadmap</h2>
+  <p class="lead">Five milestones from map to full game.</p>
+  <div class="ms"><div class="badge2">M1</div><div><h4>Map & Movement</h4><p>Map renders, provinces clickable, armies movable. No combat.</p></div></div>
+  <div class="ms"><div class="badge2">M2</div><div><h4>Battles & Conquest</h4><p>Auto-resolve battles + territory capture.</p></div></div>
+  <div class="ms"><div class="badge2">M3</div><div><h4>Watch Mode</h4><p>Real-time battle sim.</p></div></div>
+  <div class="ms"><div class="badge2">M4</div><div><h4>Economy & AI</h4><p>Recruitment, upkeep, AI turns.</p></div></div>
+  <div class="ms"><div class="badge2">M5</div><div><h4>Polish</h4><p>Sound, save/load, scenario editor.</p></div></div>
+</section>
+
+<section id="questions">
+  <h2>Open Questions</h2>
+  <p class="lead">Decisions still to make.</p>
+  <div class="q"><strong>Hex vs. square provinces?</strong> Hex feels more strategic; square is simpler to render.</div>
+  <div class="q"><strong>Turn-based map + real-time battles</strong> (recommended) vs. fully real-time.</div>
+  <div class="q"><strong>How "TABS" should battles feel?</strong> Ragdoll physics is hard in 2D; propose emergent unit AI instead.</div>
+  <div class="q"><strong>Multiplayer?</strong> Deferred to v2+.</div>
+</section>
+
+<section id="scope">
+  <h2>Out of Scope (v1)</h2>
+  <p class="lead">3D, modding API, multiplayer, deep diplomacy trees, naval combat.</p>
+  <div class="grid cols-3">
+    <div class="card"><p>3D rendering</p></div>
+    <div class="card"><p>Modding API</p></div>
+    <div class="card"><p>Multiplayer</p></div>
+    <div class="card"><p>Deep diplomacy</p></div>
+    <div class="card"><p>Naval combat</p></div>
+    <div class="card"><p>Ragdoll physics</p></div>
+  </div>
+</section>
+
+<footer>
+  Sandbox Conquest · Design Doc v0.1 · Built with the ideation + design workflow
+</footer>
+
+</body>
+</html>
+PYEOF
+echo done
